@@ -1,23 +1,25 @@
-const app = require("express")();
-const server = require("http").createServer(app);
-const io = require("socket.io")(server);
-const path = require("path");
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 
-const port = 8080;
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-app.get("/", function (req, res) {
-  res.sendFile(path.join(__dirname, "index.html")); // serve a static file
-});
+app.use(express.static("public"));
 
-// socket io configs
 io.on("connection", (socket) => {
-  console.log("user connected");
-  socket.on("disconnect", function () {
-    console.log("user disconnected");
-  });
+  console.log("A user connected:", socket.id);
+
+  socket.on("offer", (data) => socket.broadcast.emit("offer", data));
+  socket.on("answer", (data) => socket.broadcast.emit("answer", data));
+  socket.on("ice-candidate", (data) =>
+    socket.broadcast.emit("ice-candidate", data)
+  );
+  socket.on("disconnect", () => console.log("User disconnected:", socket.id));
 });
 
-// app.listen would start a new http server so using the http server already created with http
-server.listen(port, function () {
-  console.log(`Listening on port ${port}`);
+const PORT = 3000;
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on http://192.168.100.27:${PORT}`);
 });
